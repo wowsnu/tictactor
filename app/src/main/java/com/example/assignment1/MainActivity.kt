@@ -2,24 +2,17 @@ package com.example.assignment1
 
 import android.os.Bundle
 import android.widget.Button
-import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.gridlayout.widget.GridLayout
-import androidx.lifecycle.Observer
-import androidx.activity.enableEdgeToEdge
 import androidx.core.view.GravityCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.assignment1.GameViewModel
-import com.example.assignment1.com.example.assignment1.BoardHistoryAdapter
+import com.example.assignment1.com.example.assignment1.DrawerItem
+import com.example.assignment1.com.example.assignment1.DrawerViewTypeAdapter
 import com.example.assignment1.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val viewModel: GameViewModel by viewModels()
-    private lateinit var historyAdapter: BoardHistoryAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,7 +89,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateBoardUI(board: Array<Array<String?>>) {
+    private fun updateBoardUI(board: List<List<String?>>) {
         // GridLayout의 각 버튼을 보드 상태에 맞게 업데이트
         for (row in 0 until binding.gridLayout.rowCount) {
             for (col in 0 until binding.gridLayout.columnCount) {
@@ -106,18 +99,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
     private fun setupHistoryRecyclerView() {
-        binding.historyRecyclerView.layoutManager =LinearLayoutManager(this@MainActivity)
+        binding.historyRecyclerView.layoutManager = LinearLayoutManager(this@MainActivity)
 
         viewModel.boardHistory.observe(this) { history ->
-            historyAdapter = BoardHistoryAdapter(history.subList(1, history.size)) { position ->
-                if (position == -1) {
-                    viewModel.resetGame()
-                } else {
-                    viewModel.goToMove(position + 1)
+            val drawerItems = mutableListOf<DrawerItem>()
+            drawerItems.add(DrawerItem.StartButtonItem)
+            history.forEachIndexed { index, board ->
+                if (index != 0) {
+                    drawerItems.add(DrawerItem.BoardItem(index, board))
                 }
-                binding.main.closeDrawer(GravityCompat.START)
             }
-            binding.historyRecyclerView.adapter = historyAdapter
+
+            val adapter = DrawerViewTypeAdapter(
+                items = drawerItems,
+                onStartGameClick = {
+                    viewModel.resetGame()
+                    updateBoardUI(viewModel.getCurrentBoard())
+                    binding.main.closeDrawer(GravityCompat.START)
+                },
+                onBoardItemClick = { moveNumber ->
+                    viewModel.goToMove(moveNumber)
+                    updateBoardUI(viewModel.getCurrentBoard())
+                    binding.main.closeDrawer(GravityCompat.START)
+                }
+            )
+            binding.historyRecyclerView.adapter = adapter
         }
     }
 }

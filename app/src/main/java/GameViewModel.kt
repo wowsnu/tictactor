@@ -8,8 +8,10 @@ import androidx.lifecycle.ViewModel
 class GameViewModel : ViewModel() {
 
     // 틱택토 보드의 history를 포함하는 3차원 배열
-    private val _boardHistory = MutableLiveData(mutableListOf(Array(3) { arrayOfNulls<String>(3) }))
-    val boardHistory: MutableLiveData<MutableList<Array<Array<String?>>>> = _boardHistory
+    private val _boardHistory = MutableLiveData<MutableList<List<List<String?>>>>(
+        mutableListOf(List(3) { List(3) { null } })
+    )
+    val boardHistory: MutableLiveData<MutableList<List<List<String?>>>> = _boardHistory
 
     private val _currentIndex = MutableLiveData(0)
     val currentIndex: LiveData<Int> = _currentIndex
@@ -26,22 +28,24 @@ class GameViewModel : ViewModel() {
 
     // 클릭 시 호출되는 함수: 보드에 움직임 반영
     fun makeMove(row: Int, col: Int) {
-        val currentBoard = getCurrentBoard()
+        val currentBoard = getCurrentBoard().toMutableList()
         if (currentBoard[row][col] == null) {
-            val newBoard = currentBoard.map { it.copyOf() }.toTypedArray()  // 기존 보드를 복사
-            val currentPlayer = getCurrentPlayer()
-            newBoard[row][col] = currentPlayer // 현재 플레이어의 기호(X/O)를 보드에 반영
-            val newHistory = _boardHistory.value?.take((_currentIndex.value ?: 0) + 1)?.toMutableList() ?: mutableListOf()
-            newHistory.add(newBoard)
-            _boardHistory.value = newHistory
-            _currentIndex.value = newHistory.size - 1
+            val newBoard = currentBoard.mapIndexed { r, rowList ->
+                rowList.mapIndexed { c, cell ->
+                    if (r == row && c == col) getCurrentPlayer() else cell
+                }
+            }
+            _boardHistory.value = _boardHistory.value?.apply {
+                add(newBoard)
+            }
 
+            _currentIndex.value = (_currentIndex.value ?:0) + 1
             updateGameStatus()
         }
     }
 
     // 승리 여부를 확인하는 함수
-    private fun checkWinner(board: Array<Array<String?>>): Boolean {
+    private fun checkWinner(board: List<List<String?>>): Boolean {
         for (i in 0..2) {
             if (board[i][0] != null && board[i][0] == board[i][1] && board[i][1] == board[i][2]) return true  // 가로 체크
             if (board[0][i] != null && board[0][i] == board[1][i] && board[1][i] == board[2][i]) return true  // 세로 체크
@@ -57,16 +61,16 @@ class GameViewModel : ViewModel() {
 
     // 게임을 리셋하는 함수: 초기 상태로 되돌림
     fun resetGame() {
-        _boardHistory.value = mutableListOf(Array(3) { arrayOfNulls(3) })
+        _boardHistory.value = mutableListOf(List(3) { List(3) {null} })
         _currentIndex.value = 0
-        updateGameStatus()
         _isGameOver.value = false
         _resetButtonText.value = "초기화"
+        updateGameStatus()
     }
 
-    fun getCurrentBoard(): Array<Array<String?>> {
+    fun getCurrentBoard(): List<List<String?>> {
         return boardHistory.value?.getOrNull(currentIndex.value ?: 0)
-            ?: Array(3) { arrayOfNulls(3) }
+            ?: List(3) { List(3) {null} }
     }
 
     private fun getCurrentPlayer(): String {

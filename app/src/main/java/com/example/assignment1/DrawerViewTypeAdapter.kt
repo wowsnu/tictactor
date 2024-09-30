@@ -7,9 +7,10 @@ import com.example.assignment1.databinding.BoardHistoryBinding
 import com.example.assignment1.databinding.StartGameItemBinding
 
 
-class BoardHistoryAdapter(
-    private val history: List<Array<Array<String?>>>,
-    private val onItemClick: (Int) -> Unit
+class DrawerViewTypeAdapter(
+    private val items: List<DrawerItem>,
+    private val onStartGameClick: () -> Unit,
+    private val onBoardItemClick: (Int) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -17,9 +18,9 @@ class BoardHistoryAdapter(
         private const val TYPE_BOARD = 1
     }
     override fun getItemViewType(position: Int): Int {
-        return when (position) {
-            0 -> TYPE_START_BUTTON
-            else -> TYPE_BOARD
+        return when (items[position]) {
+            is DrawerItem.StartButtonItem -> TYPE_START_BUTTON
+            is DrawerItem.BoardItem -> TYPE_BOARD
         }
     }
 
@@ -37,15 +38,22 @@ class BoardHistoryAdapter(
         }
     }
 
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (holder) {
+            is StartGameViewHolder -> holder.bind(onStartGameClick)
+            is BoardViewHolder -> holder.bind(items[position] as DrawerItem.BoardItem, onBoardItemClick)
+        }
+    }
+
     class StartGameViewHolder(private val binding: StartGameItemBinding): RecyclerView.ViewHolder(binding.root) {
-        fun bind(onItemClick: () -> Unit) {
-            binding.startGameButton.setOnClickListener { onItemClick() }
+        fun bind(onStartGameClick: () -> Unit) {
+            binding.startGameButton.setOnClickListener { onStartGameClick() }
         }
     }
 
     class BoardViewHolder(private val binding: BoardHistoryBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(moveNumber: Int, board: Array<Array<String?>>, onItemClick: (Int) -> Unit) {
-            binding.moveNumber.text = "Move $moveNumber"
+        fun bind(boardItem: DrawerItem.BoardItem, onBoardItemClick: (Int) -> Unit) {
+            binding.moveNumber.text = "Move ${boardItem.moveNumber}"
 
             val cellIds = arrayOf(
                 binding.cell00, binding.cell01, binding.cell02,
@@ -53,25 +61,15 @@ class BoardHistoryAdapter(
                 binding.cell20, binding.cell21, binding.cell22
             )
 
-            for (i in board.indices) {
-                for (j in board[i].indices) {
-                    cellIds[i * 3 + j].text = board[i][j] ?: ""
+            for (i in boardItem.board.indices) {
+                for (j in boardItem.board[i].indices) {
+                    cellIds[i * 3 + j].text = boardItem.board[i][j] ?: ""
                 }
             }
 
-            binding.gotoButton.setOnClickListener { onItemClick(adapterPosition - 1) }
+            binding.gotoButton.setOnClickListener { onBoardItemClick(boardItem.moveNumber) }
         }
     }
 
-
-
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        when (holder) {
-            is StartGameViewHolder -> holder.bind {onItemClick(-1) }
-            is BoardViewHolder -> holder.bind(position, history[position - 1], onItemClick)
-        }
-    }
-
-
-    override fun getItemCount() = history.size + 1
+    override fun getItemCount() = items.size
 }
