@@ -39,10 +39,6 @@ class MainActivity : AppCompatActivity() {
             viewModel.resetGame()
             updateBoardUI(viewModel.getCurrentBoard())
         }
-
-        viewModel.resetButtonText.observe(this) { text ->
-            binding.resetButton.text = text
-        }
     }
 
     private fun setupDrawer() {
@@ -73,6 +69,7 @@ class MainActivity : AppCompatActivity() {
                     button.isEnabled = !isGameOver
                 }
             }
+            binding.resetButton.text = viewModel.getResetButtonText()
         }
     }
 

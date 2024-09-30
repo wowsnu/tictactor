@@ -53,7 +53,7 @@ class DrawerViewTypeAdapter(
 
     class BoardViewHolder(private val binding: BoardHistoryBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(boardItem: DrawerItem.BoardItem, onBoardItemClick: (Int) -> Unit) {
-            binding.moveNumber.text = "Move ${boardItem.moveNumber}"
+            binding.moveNumber.text = "${boardItem.moveNumber} 턴"
 
             val cellIds = arrayOf(
                 binding.cell00, binding.cell01, binding.cell02,

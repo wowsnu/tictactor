@@ -23,9 +23,6 @@ class GameViewModel : ViewModel() {
     private val _gameStatusDisplay = MutableLiveData("O의 차례입니다")
     val gameStatusDisplay: LiveData<String> = _gameStatusDisplay
 
-    private val _resetButtonText = MutableLiveData("초기화")
-    val resetButtonText: LiveData<String> = _resetButtonText
-
     // 클릭 시 호출되는 함수: 보드에 움직임 반영
     fun makeMove(row: Int, col: Int) {
         val currentBoard = getCurrentBoard().toMutableList()
@@ -64,7 +61,6 @@ class GameViewModel : ViewModel() {
         _boardHistory.value = mutableListOf(List(3) { List(3) {null} })
         _currentIndex.value = 0
         _isGameOver.value = false
-        _resetButtonText.value = "초기화"
         updateGameStatus()
     }
 
@@ -81,35 +77,34 @@ class GameViewModel : ViewModel() {
         return if (getCurrentPlayer() == "O") "X" else "O"
     }
 
-    fun updateGameStatus() {
+    private fun updateGameStatus() {
         val currentBoard = getCurrentBoard()
         // 승리 여부 체크
         if (checkWinner(currentBoard)) {
             _gameStatusDisplay.value = "${getOpponentPlayer()}가 승리했습니다!"
-            endGame()
+            _isGameOver.value = true
             return
         }
         if (isBoardFull()) {
             _gameStatusDisplay.value = "무승부!"
-            endGame()
+            _isGameOver.value = true
             return
         }
             // 차례 변경: 현재 차례가 "O"면 "X", "X"면 "O"로 전환
         _gameStatusDisplay.value = "${getCurrentPlayer()}의 차례입니다"
+        _isGameOver.value = false
     }
-    
-    private fun endGame() {
-        _isGameOver.value = true
-        _resetButtonText.value = "한판 더"
+
+    fun getResetButtonText():String {
+        return if (_isGameOver.value == true) "초기화" else "한판 더"
     }
+
 
     fun goToMove(position: Int) {
         if (position >= 0 && position < (_boardHistory.value?.size ?: 0)) {
             _currentIndex.value = position
             _boardHistory.value = _boardHistory.value?.take(position + 1)?.toMutableList()
-            _isGameOver.value = false
             updateGameStatus()
         }
-
     }
 }
