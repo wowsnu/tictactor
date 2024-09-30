@@ -11,12 +11,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.assignment1.GameViewModel
+import com.example.assignment1.com.example.assignment1.BoardHistoryAdapter
 import com.example.assignment1.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val viewModel: GameViewModel by viewModels()
+    private lateinit var historyAdapter: BoardHistoryAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,10 +31,12 @@ class MainActivity : AppCompatActivity() {
         initializeButtons()
         setupDrawer()
         setupBoardObserver()
+        setupGameOverObserver()
+        setupHistoryRecyclerView()
     }
 
     private fun setupGameStatusObserver() {
-        viewModel.gameStatus.observe(this) { status ->
+        viewModel.gameStatusDisplay.observe(this) { status ->
             binding.statusText.text = status
         }
     }
@@ -40,6 +45,10 @@ class MainActivity : AppCompatActivity() {
         binding.resetButton.setOnClickListener {
             viewModel.resetGame()
             updateBoardUI(viewModel.getCurrentBoard())
+        }
+
+        viewModel.resetButtonText.observe(this) { text ->
+            binding.resetButton.text = text
         }
     }
 
@@ -58,6 +67,17 @@ class MainActivity : AppCompatActivity() {
             viewModel.currentIndex.value?.let { currentIndex ->
                 if (currentIndex >= 0 && currentIndex < history.size) {
                     updateBoardUI(history[currentIndex])
+                }
+            }
+        }
+    }
+
+    private fun setupGameOverObserver() {
+        viewModel.isGameOver.observe(this) { isGameOver ->
+            for (row in 0 until binding.gridLayout.rowCount) {
+                for (col in 0 until binding.gridLayout.columnCount) {
+                    val button = binding.gridLayout.getChildAt(row * binding.gridLayout.columnCount + col) as Button
+                    button.isEnabled = !isGameOver
                 }
             }
         }
@@ -83,6 +103,21 @@ class MainActivity : AppCompatActivity() {
                 val button = binding.gridLayout.getChildAt(row * binding.gridLayout.columnCount + col) as Button
                 button.text = board[row][col] ?: ""
             }
+        }
+    }
+    private fun setupHistoryRecyclerView() {
+        binding.historyRecyclerView.layoutManager =LinearLayoutManager(this@MainActivity)
+
+        viewModel.boardHistory.observe(this) { history ->
+            historyAdapter = BoardHistoryAdapter(history.subList(1, history.size)) { position ->
+                if (position == -1) {
+                    viewModel.resetGame()
+                } else {
+                    viewModel.goToMove(position + 1)
+                }
+                binding.main.closeDrawer(GravityCompat.START)
+            }
+            binding.historyRecyclerView.adapter = historyAdapter
         }
     }
 }
