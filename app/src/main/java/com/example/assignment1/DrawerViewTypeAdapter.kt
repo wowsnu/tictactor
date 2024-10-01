@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.assignment1.databinding.BoardHistoryBinding
+import com.example.assignment1.databinding.LastBoardBinding
 import com.example.assignment1.databinding.StartGameItemBinding
 
 
@@ -16,11 +17,13 @@ class DrawerViewTypeAdapter(
     companion object {
         private const val TYPE_START_BUTTON = 0
         private const val TYPE_BOARD = 1
+        private const val TYPE_LAST_BOARD = 2
     }
     override fun getItemViewType(position: Int): Int {
         return when (items[position]) {
             is DrawerItem.StartButtonItem -> TYPE_START_BUTTON
             is DrawerItem.BoardItem -> TYPE_BOARD
+            is DrawerItem.LastBoardItem -> TYPE_LAST_BOARD
         }
     }
 
@@ -34,6 +37,10 @@ class DrawerViewTypeAdapter(
                 val binding = BoardHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
                 BoardViewHolder(binding)
             }
+            TYPE_LAST_BOARD -> {
+                val binding = LastBoardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                LastBoardViewHolder(binding)
+            }
             else -> throw IllegalArgumentException("Invalid View Type")
         }
     }
@@ -42,6 +49,7 @@ class DrawerViewTypeAdapter(
         when (holder) {
             is StartGameViewHolder -> holder.bind(onStartGameClick)
             is BoardViewHolder -> holder.bind(items[position] as DrawerItem.BoardItem, onBoardItemClick)
+            is LastBoardViewHolder -> holder.bind(items[position] as DrawerItem.LastBoardItem)
         }
     }
 
@@ -68,6 +76,25 @@ class DrawerViewTypeAdapter(
             }
 
             binding.gotoButton.setOnClickListener { onBoardItemClick(boardItem.moveNumber) }
+        }
+    }
+
+    class LastBoardViewHolder(private val binding: LastBoardBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(boardItem: DrawerItem.LastBoardItem) {
+
+            binding.stateText.text = boardItem.gameStatus
+
+            val cellIds = arrayOf(
+                binding.cell00, binding.cell01, binding.cell02,
+                binding.cell10, binding.cell11, binding.cell12,
+                binding.cell20, binding.cell21, binding.cell22
+            )
+
+            for (i in boardItem.board.indices) {
+                for (j in boardItem.board[i].indices) {
+                    cellIds[i * 3 + j].text = boardItem.board[i][j] ?: ""
+                }
+            }
         }
     }
 

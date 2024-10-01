@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
         setupDrawer()
         setupBoardObserver()
         setupGameOverObserver()
-        setupHistoryRecyclerView()
+        setupDrawerRecyclerView()
     }
 
     private fun setupGameStatusObserver() {
@@ -95,32 +95,41 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    private fun setupHistoryRecyclerView() {
+    private fun setupDrawerRecyclerView() {
         binding.historyRecyclerView.layoutManager = LinearLayoutManager(this@MainActivity)
+        val drawerItems = mutableListOf<DrawerItem>()
 
-        viewModel.boardHistory.observe(this) { history ->
-            val drawerItems = mutableListOf<DrawerItem>()
+        fun updateDrawerItems() {
+            val history = viewModel.boardHistory.value ?: return
+            val isGameOver = viewModel.isGameOver.value ?: false
+            val gameStatus = viewModel.gameStatusDisplay.value ?: ""
+
+            drawerItems.clear()
             drawerItems.add(DrawerItem.StartButtonItem)
             history.forEachIndexed { index, board ->
                 if (index != 0) {
-                    drawerItems.add(DrawerItem.BoardItem(index, board))
+                    if (index == history.size - 1 && isGameOver) {
+                        drawerItems.add(DrawerItem.LastBoardItem(board, gameStatus))
+                    } else {
+                        drawerItems.add(DrawerItem.BoardItem(index, board))
+                    }
                 }
             }
 
-            val adapter = DrawerViewTypeAdapter(
+            binding.historyRecyclerView.adapter = DrawerViewTypeAdapter(
                 items = drawerItems,
                 onStartGameClick = {
                     viewModel.resetGame()
-                    updateBoardUI(viewModel.getCurrentBoard())
                     binding.main.closeDrawer(GravityCompat.START)
                 },
                 onBoardItemClick = { moveNumber ->
                     viewModel.goToMove(moveNumber)
-                    updateBoardUI(viewModel.getCurrentBoard())
                     binding.main.closeDrawer(GravityCompat.START)
                 }
             )
-            binding.historyRecyclerView.adapter = adapter
         }
+
+        viewModel.boardHistory.observe(this) { _ -> updateDrawerItems() }
+        viewModel.isGameOver.observe(this) { _ -> updateDrawerItems() }
+        viewModel.gameStatusDisplay.observe(this) { _ -> updateDrawerItems() }        }
     }
-}
